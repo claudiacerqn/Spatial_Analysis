@@ -177,20 +177,28 @@ compmap <- function(spobj, vara_t0, vara_t1, varb_t0,varb_t1, lang="es", leg=c("
   ganat1[vara_t1>varb_t1] <- 1
   ganat1[is.na(ganat1)] <- 0
   
-  dif <- NA
-  dif[adif>0 & ganat0==1 & ganat1==1] <- 1 
-  dif[adif<0 & ganat0==1 & ganat1==1] <- 2 
+  dif <- vector(mode = "integer", length(ganat0))
+  dif[adif>0 & (ganat0==1 & ganat1==1)] <- 1 
+  dif[adif<0 & (ganat0==1 & ganat1==1)] <- 2 
   dif[ganat0==0 & ganat1==1] <- 3 
   dif[ganat0==1 & ganat1==0] <- 4 
-  dif[bdif<0 & ganat0==0 & ganat1==0] <- 5 
-  dif[bdif>0 & ganat0==0 & ganat1==0] <- 6 
+  dif[bdif<0 & (ganat0==0 & ganat1==0)] <- 5 
+  dif[bdif>0 & (ganat0==0 & ganat1==0)] <- 6 
+  dif[dif==0]<- NA
   
   ta <- table(c(1,2,3,4,5,6))
   tb <-table(dif)
-  ta[! names(ta) %in% names(tb)] <- 0
-  ta[ names(ta) %in% names(tb)] <- tb
   
-  tbp <- round(ta/sum(ta)*100,1)
+  ta <- data.frame(ta)
+  tb <- data.frame(tb)
+  
+  names(ta) <- c("cod","freq")
+  names(tb) <- c("cod","n")
+  ta <- merge(ta,tb, by="cod", all.x=T)
+  ta$freq <- NULL
+  ta$n[is.na(ta$n)] <- 0
+  
+  tbp <- round(ta$n/sum(ta$n)*100,1)
   
   if (lang=="en") lgval <- c(" , > margin "," , < margin ", " to ")
   if (lang=="es") lgval <- c(" , > margen "," , < margen ", " a ")
@@ -199,8 +207,15 @@ compmap <- function(spobj, vara_t0, vara_t1, varb_t0,varb_t1, lang="es", leg=c("
   legs <- c(paste0(leg[1], lgval[1]),paste0(leg[1], lgval[2]),paste0(leg[2],lgval[3],leg[1]),paste0(leg[1],lgval[3],leg[2]),paste0(leg[2], lgval[2]),paste0(leg[2],lgval[1]))
   
   legs <- paste(legs," (",tbp,"%)", sep="")
+
   
-  cols <- pal[findInterval(dif,sort(unique(dif)))]
+  cols <- rep("transparent",length(dif))
+  cols[dif==1] <- pal[1]
+  cols[dif==2] <- pal[2]
+  cols[dif==3] <- pal[3]
+  cols[dif==4] <- pal[4]
+  cols[dif==5] <- pal[5]
+  cols[dif==6] <- pal[6]
   
   par(mar=rep(0,4))
   plot(spobj, border=border, col=cols)
